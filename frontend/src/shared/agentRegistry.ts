@@ -1,3 +1,4 @@
+import { apiFetch } from './api';
 /**
  * Agent 注册表 — 前端唯一数据源。
  *
@@ -43,6 +44,17 @@ export function getSpriteKey(slug: string): string {
 let cachedAgents: AgentRegistryEntry[] | null = null;
 let loadPromise: Promise<AgentRegistryEntry[]> | null = null;
 
+interface BackendAgent {
+  slug: string;
+  display_name: string;
+  role?: string;
+  color?: string;
+  room_id?: string;
+  phaser_agent_id?: string;
+  is_dispatcher?: boolean;
+  is_builtin?: boolean;
+}
+
 /** 硬编码 fallback — 与后端 BUILTIN_AGENTS + DISPATCHER 一致 */
 const FALLBACK_AGENTS: AgentRegistryEntry[] = [
   { slug: 'dispatcher', displayName: '调度员', role: '任务分配与调度', color: '#ff6b6b', roomId: 'manager', phaserAgentId: 'agt_dispatcher', isDispatcher: true, isBuiltin: true },
@@ -60,10 +72,11 @@ export function loadAgentRegistry(): Promise<AgentRegistryEntry[]> {
   if (cachedAgents) return Promise.resolve(cachedAgents);
   if (loadPromise) return loadPromise;
 
-  loadPromise = fetch('/api/v1/office/agent-registry')
+  loadPromise = apiFetch('/api/v1/office/agent-registry')
     .then((r) => r.json())
     .then((envelope) => {
-      const raw: any[] = envelope?.data?.agents || [];
+      const payload = envelope as { data?: { agents?: BackendAgent[] } };
+      const raw = payload.data?.agents || [];
       if (raw.length === 0) throw new Error('empty registry');
       cachedAgents = raw.map((a) => ({
         slug: a.slug,

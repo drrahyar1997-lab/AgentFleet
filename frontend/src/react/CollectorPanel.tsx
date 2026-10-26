@@ -1,3 +1,4 @@
+import { apiFetch } from '../shared/api';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 interface CollectorStatus {
@@ -45,12 +46,12 @@ export const CollectorPanel: React.FC<Props> = ({ onClose }) => {
 
   // 从后端加载持久化日志
   const loadPersistedLogs = useCallback(() => {
-    fetch('/api/v1/office/collector/logs')
+    apiFetch('/api/v1/office/collector/logs')
       .then((r) => r.json())
       .then((env) => {
         const items = env?.data?.logs || [];
         if (items.length > 0) {
-          const formatted = items.map((item: any) => {
+          const formatted = items.map((item: { timestamp?: string; message?: string; error?: string; query?: string; type?: string }) => {
             const ts = item.timestamp ? new Date(item.timestamp).toLocaleTimeString('zh-CN', { hour12: false }) : '??:??:??';
             const detail = item.message || item.error || `${item.query || ''}`;
             return `[${ts}] ${item.type}: ${detail}`;
@@ -68,7 +69,7 @@ export const CollectorPanel: React.FC<Props> = ({ onClose }) => {
 
   // 轮询状态
   const syncStatus = useCallback(() => {
-    fetch('/api/v1/office/collector/status')
+    apiFetch('/api/v1/office/collector/status')
       .then((r) => r.json())
       .then((env) => {
         if (env?.data) setStatus(env.data);
@@ -123,7 +124,7 @@ export const CollectorPanel: React.FC<Props> = ({ onClose }) => {
   const handleOpen = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/v1/office/collector/open', {
+      const res = await apiFetch('/api/v1/office/collector/open', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ start_url: selectedPlatform }),
@@ -136,8 +137,8 @@ export const CollectorPanel: React.FC<Props> = ({ onClose }) => {
         setStatus(env.data);
         connectSSE();
       }
-    } catch (e: any) {
-      addLog(`启动失败: ${e.message}`);
+    } catch (error: unknown) {
+      addLog(`启动失败: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setLoading(false);
     }
@@ -146,7 +147,7 @@ export const CollectorPanel: React.FC<Props> = ({ onClose }) => {
   // 关闭浏览器
   const handleClose = async () => {
     try {
-      await fetch('/api/v1/office/collector/close', { method: 'POST' });
+      await apiFetch('/api/v1/office/collector/close', { method: 'POST' });
       addLog('浏览器已关闭');
       eventSourceRef.current?.close();
       eventSourceRef.current = null;
@@ -157,7 +158,7 @@ export const CollectorPanel: React.FC<Props> = ({ onClose }) => {
   // 加载已采集商品
   const loadProducts = async () => {
     try {
-      const res = await fetch('/api/v1/office/collector/products');
+      const res = await apiFetch('/api/v1/office/collector/products');
       const env = await res.json();
       if (env?.data?.products) {
         setProducts(env.data.products);
@@ -273,7 +274,7 @@ export const CollectorPanel: React.FC<Props> = ({ onClose }) => {
               {logs.length > 0 && (
                 <button
                   onClick={async () => {
-                    await fetch('/api/v1/office/collector/logs', { method: 'DELETE' });
+                    await apiFetch('/api/v1/office/collector/logs', { method: 'DELETE' });
                     setLogs([]);
                   }}
                   style={{

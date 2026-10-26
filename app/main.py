@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Optional
+import hmac
 
-from fastapi import BackgroundTasks, FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.models import (
@@ -21,12 +22,34 @@ from app.models import (
     TrainingAttemptRecord,
     make_id,
 )
+from app.config import settings
 from app.office.router import router as office_router
 from app.services.orchestrator import orchestrator
 from app.store import store
 
-app = FastAPI(title="Ecommerce AI Lab Prototype", version="0.1.0")
-app.include_router(office_router, prefix="/api/v1/office", tags=["AgentsOffice"])
+app = FastAPI(title="AgentFleet", version="0.1.0")
+app.include_router(office_router, prefix="/api/v1/office", tags=["AgentFleet"])
+app.state.api_access_token = settings.api_access_token
+
+
+@app.middleware("http")
+async def require_api_token(request: Request, call_next):
+    """Require a bearer token for API routes when one is configured.
+
+    Health remains public for container health checks. Keep the token in the
+    server environment; never embed it in the static frontend bundle.
+    """
+    token = request.app.state.api_access_token
+    if token and request.url.path.startswith("/api/") and request.url.path != "/api/v1/health":
+        authorization = request.headers.get("Authorization", "")
+        provided = authorization[7:].strip() if authorization.lower().startswith("bearer ") else ""
+        if not provided or not hmac.compare_digest(provided, token):
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "A valid bearer token is required."},
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    return await call_next(request)
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"

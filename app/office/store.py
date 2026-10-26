@@ -254,7 +254,9 @@ class OfficeStore:
                     "temperature": cfg.get("temperature", 0.7),
                     "max_tokens": cfg.get("max_tokens", 2048),
                     "api_base": cfg.get("api_base", ""),
-                    "api_key": cfg.get("api_key", ""),
+                    # Secrets are write-only. Never serialize a stored key.
+                    "api_key": "",
+                    "api_key_configured": bool(cfg.get("api_key")),
                     # 身份定义
                     "display_name": meta.get("display_name", row.name),
                     "role": meta.get("role", row.description or ""),
@@ -881,6 +883,10 @@ class OfficeStore:
 
     @staticmethod
     def _agent_row_to_dict(row: AgentRow) -> Dict[str, Any]:
+        model_config = dict(row.model_config or {})
+        api_key_configured = bool(model_config.pop("api_key", None))
+        model_config["api_key"] = ""
+        model_config["api_key_configured"] = api_key_configured
         return {
             "agent_id": row.agent_id,
             "name": row.name,
@@ -888,7 +894,7 @@ class OfficeStore:
             "description": row.description,
             "agent_type": row.agent_type,
             "status": row.status,
-            "model_config": row.model_config or {},
+            "model_config": model_config,
             "last_active_at": _dt_to_iso(row.last_active_at) if row.last_active_at else None,
             "error_message": row.error_message,
             "metadata": row.extra_metadata or {},

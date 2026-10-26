@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-type EventCallback = (...args: any[]) => void;
+type EventCallback<Args extends unknown[] = never[]> = (...args: Args) => void;
 
 class GameEventBus {
   private emitter = new Phaser.Events.EventEmitter();
@@ -14,19 +14,19 @@ class GameEventBus {
     return this.gameInstance;
   }
 
-  emit(event: string, ...args: any[]) {
+  emit<Args extends unknown[]>(event: string, ...args: Args) {
     this.emitter.emit(event, ...args);
   }
 
-  on(event: string, callback: EventCallback, context?: any) {
+  on<Args extends unknown[]>(event: string, callback: EventCallback<Args>, context?: object) {
     this.emitter.on(event, callback, context);
   }
 
-  once(event: string, callback: EventCallback, context?: any) {
+  once<Args extends unknown[]>(event: string, callback: EventCallback<Args>, context?: object) {
     this.emitter.once(event, callback, context);
   }
 
-  off(event: string, callback?: EventCallback, context?: any) {
+  off<Args extends unknown[]>(event: string, callback?: EventCallback<Args>, context?: object) {
     this.emitter.off(event, callback, context);
   }
 }

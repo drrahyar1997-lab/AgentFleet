@@ -17,11 +17,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/DBell-workshop/AgentFleet/stargazers"><img src="https://img.shields.io/github/stars/DBell-workshop/AgentFleet?style=social" alt="Stars" /></a>
-  <a href="https://github.com/DBell-workshop/AgentFleet/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-BSL_1.1-blue" alt="License" /></a>
-  <a href="#"><img src="https://img.shields.io/badge/python-3.9+-green" alt="Python" /></a>
+  <a href="https://github.com/drrahyar1997-lab/AgentFleet/stargazers"><img src="https://img.shields.io/github/stars/drrahyar1997-lab/AgentFleet?style=social" alt="Stars" /></a>
+  <a href="https://github.com/drrahyar1997-lab/AgentFleet/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-BSL_1.1-blue" alt="License" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/python-3.11+-green" alt="Python" /></a>
   <a href="#"><img src="https://img.shields.io/badge/frontend-React%20%2B%20Phaser3-purple" alt="Frontend" /></a>
-  <a href="https://github.com/DBell-workshop/AgentFleet/releases/latest"><img src="https://img.shields.io/badge/下載-macOS%20DMG-blue" alt="Download" /></a>
+  <a href="https://github.com/drrahyar1997-lab/AgentFleet/releases/latest"><img src="https://img.shields.io/badge/下載-macOS%20DMG-blue" alt="Download" /></a>
 </p>
 
 <p align="center">
@@ -54,7 +54,7 @@ AgentFleet 是一個**多 Agent 協作工作台**，用像素風 RPG 辦公室�
 <a id="screenshots"></a>
 ## 截圖
 
-> 截圖來自 **AgentFleet Pro**。Lite（開源版）包含核心像素辦公室、Agent 對話和場景系統。
+> 截圖來自 **AgentFleet Pro**。Lite（BSL 1.1）包含核心像素辦公室、Agent 對話和場景系統。
 
 <table>
 <tr>
@@ -111,45 +111,42 @@ AgentFleet 是一個**多 Agent 協作工作台**，用像素風 RPG 辦公室�
 
 ### 桌面應用（推薦）
 
-從 [Releases](https://github.com/DBell-workshop/AgentFleet/releases/latest) 下載最新 DMG：
-
-1. 下載 `AgentFleet_x.x.x_aarch64.dmg`（macOS Apple Silicon）
-2. 拖入 Applications
-3. 啟動 —— 像素風 Loading 頁面會在後端啟動時顯示
-4. 在設定中配置 API Key，即可開始對話
-
-> DMG 已通過 Apple 簽名和公證 —— 安裝零警告。
+目前 GitHub Releases 尚無公開的桌面安裝包。此儲存庫提供 Lite 原始碼，請使用下方開發模式或 Docker。
 
 ### 開發模式
 
 ```bash
-git clone https://github.com/DBell-workshop/AgentFleet.git
+git clone https://github.com/drrahyar1997-lab/AgentFleet.git
 cd AgentFleet
 
 # 後端
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-python run_server.py
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 
 # 前端（另開終端）
 cd frontend && npm install && npm run dev
 ```
 
-訪問 **http://localhost:8000/static/office/**
+訪問 **http://localhost:8001/static/office/**
 
 ### Docker
 
 ```bash
-cp .env.example .env   # 至少添加一個 LLM API Key
-docker compose up -d
+cp .env.example .env
+# 在 .env 中設定強隨機 API_ACCESS_TOKEN 和 POSTGRES_PASSWORD
+# 例如：openssl rand -hex 32
+docker compose up --build -d
 ```
+
+容器僅綁定至 `127.0.0.1:8001`，PostgreSQL 埠不會發布至主機。請設定 API 存取權杖，勿直接暴露於不可信網路。
 
 ---
 
 <a id="pro-vs-lite"></a>
 ## Pro vs Lite
 
-| 功能 | Lite（開源版） | Pro |
+| 功能 | Lite（BSL 1.1） | Pro |
 |------|:------------:|:---:|
 | 像素風 RPG 辦公室 | ✅ | ✅ |
 | Agent 對話（群聊 + 私聊） | ✅ | ✅ |
@@ -188,7 +185,7 @@ docker compose up -d
 <a id="support"></a>
 ## 支持這個專案
 
-**⭐ [Star 這個倉庫](https://github.com/DBell-workshop/AgentFleet)** —— 最簡單的支持方式
+**⭐ [Star 這個倉庫](https://github.com/drrahyar1997-lab/AgentFleet)** —— 最簡單的支持方式
 
 ---
 
@@ -202,9 +199,7 @@ docker compose up -d
 
 ## 貢獻
 
-- 提 [Issue](https://github.com/DBell-workshop/AgentFleet/issues) 回報 Bug 或建議功能
-- 提交 PR 貢獻程式碼
-- 在 [Discussions](https://github.com/DBell-workshop/AgentFleet/discussions) 交流想法
+- 請透過 PR 提交程式碼或回報問題。目前此儲存庫尚未啟用 GitHub Issues 和 Discussions。
 
 ---
 

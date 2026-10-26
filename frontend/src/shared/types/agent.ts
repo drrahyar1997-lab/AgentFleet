@@ -15,5 +15,5 @@ export interface AgentData {
   description: string;
   agent_type: string;
   status: string;
-  model_config: Record<string, any>;
+  model_config: Record<string, unknown>;
 }

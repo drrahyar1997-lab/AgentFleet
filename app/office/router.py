@@ -860,7 +860,9 @@ def update_agent_config(slug: str, payload: AgentConfigPayload) -> ApiEnvelope:
     }
     if payload.api_base is not None:
         config["api_base"] = payload.api_base
-    if payload.api_key is not None:
+    # Empty input means "leave the existing secret unchanged". Secrets are
+    # write-only and are never returned by GET /agent-config.
+    if payload.api_key:
         config["api_key"] = payload.api_key
     # 只传入非 None 的身份字段
     if payload.display_name is not None:
