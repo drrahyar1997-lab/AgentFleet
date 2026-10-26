@@ -1,3 +1,4 @@
+import { apiFetch } from '../shared/api';
 import React, { useEffect, useState, useCallback } from 'react';
 
 interface TableColumn {
@@ -23,7 +24,7 @@ interface FilePreview {
   total_rows: number;
   total_columns: number;
   columns: { original_name: string; safe_name: string; sql_type: string; null_count: number; unique_count: number; sample_values: string[] }[];
-  preview: Record<string, any>[];
+  preview: Record<string, unknown>[];
 }
 
 interface Props {
@@ -34,7 +35,7 @@ export const DatabasePanel: React.FC<Props> = ({ onClose }) => {
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
-  const [tableData, setTableData] = useState<{ columns: string[]; rows: any[][] } | null>(null);
+  const [tableData, setTableData] = useState<{ columns: string[]; rows: unknown[][] } | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [filePreview, setFilePreview] = useState<FilePreview | null>(null);
   const [loadingTables, setLoadingTables] = useState(true);
@@ -47,7 +48,7 @@ export const DatabasePanel: React.FC<Props> = ({ onClose }) => {
     setLoadingTables(true);
     setError('');
     try {
-      const res = await fetch('/api/v1/office/user-tables');
+      const res = await apiFetch('/api/v1/office/user-tables');
       const envelope = await res.json();
       const data = envelope?.data;
       if (data?.error) {
@@ -69,7 +70,7 @@ export const DatabasePanel: React.FC<Props> = ({ onClose }) => {
   // 加载文件列表
   const loadFiles = useCallback(async () => {
     try {
-      const res = await fetch('/api/v1/office/uploads');
+      const res = await apiFetch('/api/v1/office/uploads');
       const envelope = await res.json();
       setFiles(envelope?.data?.files || []);
     } catch {
@@ -94,7 +95,7 @@ export const DatabasePanel: React.FC<Props> = ({ onClose }) => {
     setLoadingData(true);
     setTableData(null);
     try {
-      const res = await fetch(`/api/v1/office/user-tables/${tableName}/data?limit=100`);
+      const res = await apiFetch(`/api/v1/office/user-tables/${tableName}/data?limit=100`);
       const envelope = await res.json();
       const data = envelope?.data;
       if (data?.error) {
@@ -102,9 +103,14 @@ export const DatabasePanel: React.FC<Props> = ({ onClose }) => {
       } else if (data?.type === 'query') {
         // 后端返回 rows 为 dict 数组，转成二维数组供渲染
         const cols: string[] = data.columns || [];
-        const arrayRows = (data.rows || []).map((row: any) =>
-          Array.isArray(row) ? row : cols.map((c) => row[c] ?? null)
-        );
+        const arrayRows = (data.rows || []).map((row: unknown) => {
+          if (Array.isArray(row)) return row as unknown[];
+          if (typeof row === 'object' && row !== null) {
+            const record = row as Record<string, unknown>;
+            return cols.map((column) => record[column] ?? null);
+          }
+          return [row];
+        });
         setTableData({ columns: cols, rows: arrayRows });
       }
     } catch {
@@ -120,7 +126,7 @@ export const DatabasePanel: React.FC<Props> = ({ onClose }) => {
     setLoadingData(true);
     setFilePreview(null);
     try {
-      const res = await fetch(`/api/v1/office/uploads/${encodeURIComponent(fileName)}/preview`);
+      const res = await apiFetch(`/api/v1/office/uploads/${encodeURIComponent(fileName)}/preview`);
       const envelope = await res.json();
       const data = envelope?.data;
       if (data?.error) {

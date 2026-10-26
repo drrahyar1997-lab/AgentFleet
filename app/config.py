@@ -16,6 +16,9 @@ def _get_database_url_sync() -> Optional[str]:
 
 @dataclass(frozen=True)
 class Settings:
+    # ---------- 安全 ----------
+    api_access_token: str = os.getenv("API_ACCESS_TOKEN", "").strip()
+
     # ---------- 数据库 ----------
     database_url_sync: Optional[str] = field(default_factory=_get_database_url_sync)
 
@@ -31,6 +34,10 @@ class Settings:
 
     # ---------- 数据源 ----------
     datasource_mode: str = os.getenv("DATASOURCE_MODE", "mock").strip().lower()
+
+    def __post_init__(self) -> None:
+        if self.api_access_token and len(self.api_access_token) < 32:
+            raise ValueError("API_ACCESS_TOKEN must contain at least 32 characters")
 
     # ---------- OpenClaw（已弃用，保留向后兼容） ----------
     openclaw_mode: str = os.getenv("OPENCLAW_MODE", "mock").strip().lower()

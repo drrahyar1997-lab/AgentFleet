@@ -1,19 +1,16 @@
-# Contributing to AgentsOffice
+# Contributing to AgentFleet
 
-感谢你对 AgentsOffice 的关注！我们欢迎各种形式的贡献。
+感谢你对 AgentFleet 的关注！我们欢迎各种形式的贡献。
 
 ## 如何参与
 
-### 报告 Bug
+### 报告 Bug / 提出功能建议
 
-- 使用 [Bug Report](https://github.com/DBell-workshop/ecommerce-ai-lab/issues/new?template=bug_report.md) 模板提交 Issue
-- 描述复现步骤、期望行为和实际行为
+本仓库的 GitHub Issues 与 Discussions 当前未启用，请通过 Pull Request 提交反馈：
+
+- 在 PR 描述中说明复现步骤、期望行为和实际行为（或功能建议的使用场景）
 - 附上浏览器控制台截图（如有）
-
-### 提出功能建议
-
-- 使用 [Feature Request](https://github.com/DBell-workshop/ecommerce-ai-lab/issues/new?template=feature_request.md) 模板提交 Issue
-- 描述使用场景和期望的效果
+- 安全问题请勿通过 PR 公开，请查看 [SECURITY.md](SECURITY.md) 中的报告方式
 
 ### 提交代码
 
@@ -57,7 +54,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env  # 编辑 .env 填入 API Key
-uvicorn app.main:app --reload --port 8001
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 
 # 3. 前端（开发模式，支持热更新）
 cd frontend
@@ -69,7 +66,7 @@ npm run dev
 
 ```
 app/                    # FastAPI 后端
-├── office/             #   AgentsOffice 容器层（路由、存储）
+├── office/             #   AgentFleet 容器层（路由、存储）
 ├── services/           #   业务服务（Agent 调度、LLM、比价）
 ├── db/                 #   数据库模型
 └── static/office/      #   前端构建产物

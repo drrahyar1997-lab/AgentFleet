@@ -17,11 +17,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/DBell-workshop/AgentFleet/stargazers"><img src="https://img.shields.io/github/stars/DBell-workshop/AgentFleet?style=social" alt="Stars" /></a>
-  <a href="https://github.com/DBell-workshop/AgentFleet/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-BSL_1.1-blue" alt="License" /></a>
-  <a href="#"><img src="https://img.shields.io/badge/python-3.9+-green" alt="Python" /></a>
+  <a href="https://github.com/drrahyar1997-lab/AgentFleet/stargazers"><img src="https://img.shields.io/github/stars/drrahyar1997-lab/AgentFleet?style=social" alt="Stars" /></a>
+  <a href="https://github.com/drrahyar1997-lab/AgentFleet/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-BSL_1.1-blue" alt="License" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/python-3.11+-green" alt="Python" /></a>
   <a href="#"><img src="https://img.shields.io/badge/frontend-React%20%2B%20Phaser3-purple" alt="Frontend" /></a>
-  <a href="https://github.com/DBell-workshop/AgentFleet/releases/latest"><img src="https://img.shields.io/badge/download-macOS%20DMG-blue" alt="Download" /></a>
 </p>
 
 <p align="center">
@@ -54,7 +53,7 @@ Define roles, write prompts, pick scenes -- spin up your own AI workforce in min
 <a id="screenshots"></a>
 ## Screenshots
 
-> Screenshots are from **AgentFleet Pro**. The Lite (open-source) edition includes the core pixel office, agent chat, and scene system.
+> Screenshots are from **AgentFleet Pro**. The Lite (source-available under BSL 1.1) edition includes the core pixel office, agent chat, and scene system.
 
 <table>
 <tr>
@@ -117,47 +116,44 @@ A pixel cat companion that lives in its own window:
 <a id="quick-start"></a>
 ## Quick Start
 
-### Desktop App (Recommended)
+### Desktop App
 
-Download the latest DMG from [Releases](https://github.com/DBell-workshop/AgentFleet/releases/latest):
-
-1. Download `AgentFleet_x.x.x_aarch64.dmg` (macOS Apple Silicon)
-2. Drag to Applications
-3. Launch -- the pixel loading screen appears while the backend starts
-4. Configure your API key in Settings and start chatting
-
-> The DMG is signed and notarized by Apple -- no security warnings.
+There is currently no public desktop release in GitHub Releases. The open repository contains the Lite source; use Development Mode or Docker below.
 
 ### Development Mode
 
 ```bash
-git clone https://github.com/DBell-workshop/AgentFleet.git
+git clone https://github.com/drrahyar1997-lab/AgentFleet.git
 cd AgentFleet
 
 # Backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-python run_server.py
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 
 # Frontend (separate terminal)
 cd frontend && npm install && npm run dev
 ```
 
-Visit **http://localhost:8000/static/office/**
+Visit **http://localhost:8001/static/office/**
 
 ### Docker
 
 ```bash
-cp .env.example .env   # Add at least one LLM API Key
-docker compose up -d
+cp .env.example .env
+# Set API_ACCESS_TOKEN and POSTGRES_PASSWORD to strong random values in .env.
+# For example: openssl rand -hex 32
+docker compose up --build -d
 ```
+
+The container binds to `127.0.0.1:8001`; PostgreSQL is not published to the host. The UI prompts for `API_ACCESS_TOKEN` when needed. Do not expose the app beyond localhost without HTTPS and a trusted network boundary.
 
 ---
 
 <a id="pro-vs-lite"></a>
 ## Pro vs Lite
 
-| Feature | Lite (Open Source) | Pro |
+| Feature | Lite (BSL 1.1) | Pro |
 |---------|:------------------:|:---:|
 | Pixel-art RPG office | ✅ | ✅ |
 | Agent chat (group + DM) | ✅ | ✅ |
@@ -200,9 +196,9 @@ docker compose up -d
 <a id="support"></a>
 ## Support This Project
 
-AgentFleet is an open-source project. If you find it useful:
+AgentFleet is source-available under BSL 1.1; commercial use is restricted until the stated change date. If you find it useful:
 
-**⭐ [Star this repo](https://github.com/DBell-workshop/AgentFleet)** -- The simplest way to support us
+**⭐ [Star this repo](https://github.com/drrahyar1997-lab/AgentFleet)** -- The simplest way to support us
 
 ---
 
@@ -218,15 +214,13 @@ AgentFleet is an open-source project. If you find it useful:
 
 Contributions are welcome!
 
-- Open an [Issue](https://github.com/DBell-workshop/AgentFleet/issues) to report bugs or suggest features
-- Submit a PR to contribute code
-- Chat with us on [Discussions](https://github.com/DBell-workshop/AgentFleet/discussions)
+- Submit a PR to contribute code or report a bug. GitHub Issues and Discussions are currently disabled for this repository.
 
 ---
 
 ## License
 
-This project is licensed under the [Business Source License 1.1](LICENSE).
+This project is source-available under the [Business Source License 1.1](LICENSE), which restricts commercial use until the stated change date.
 
 - ✅ Personal use, learning, research, and internal evaluation
 - ❌ Commercial use requires authorization

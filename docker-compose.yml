@@ -3,11 +3,9 @@ services:
     image: postgres:16-alpine
     container_name: agents_office_db
     restart: unless-stopped
-    ports:
-      - "5432:5432"
     environment:
       POSTGRES_USER: ecom_dev
-      POSTGRES_PASSWORD: ecom_dev_pass
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ecom_ai_lab
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -23,12 +21,13 @@ services:
     container_name: agents_office_app
     restart: unless-stopped
     ports:
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"
     env_file:
       - .env
     environment:
       # 容器内部通过服务名连接 PostgreSQL，覆盖 .env 中的 localhost
-      DATABASE_URL_SYNC: postgresql://ecom_dev:ecom_dev_pass@postgres:5432/ecom_ai_lab
+      DATABASE_URL_SYNC: postgresql://ecom_dev:${POSTGRES_PASSWORD}@postgres:5432/ecom_ai_lab
+      API_ACCESS_TOKEN: ${API_ACCESS_TOKEN:?Set API_ACCESS_TOKEN in .env}
     depends_on:
       postgres:
         condition: service_healthy

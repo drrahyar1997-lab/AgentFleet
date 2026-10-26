@@ -1,3 +1,4 @@
+import { apiFetch } from '../shared/api';
 import React, { useCallback, useEffect, useState } from 'react';
 import { EventBus } from '../shared/events/EventBus';
 import { loadAgentRegistry, getAgentsCached } from '../shared/agentRegistry';
@@ -6,7 +7,7 @@ import { loadAgentRegistry, getAgentsCached } from '../shared/agentRegistry';
 let MODEL_DISPLAY_NAMES: Record<string, string> = {};
 
 // 启动时从后端加载模型显示名映射
-fetch('/api/v1/office/models')
+apiFetch('/api/v1/office/models')
   .then((r) => r.json())
   .then((envelope) => {
     const models = envelope?.data?.models || [];
@@ -101,7 +102,7 @@ export const AgentStatusBar: React.FC = () => {
 
   // 从后端加载 agent 定义
   const syncAgentDefinitions = useCallback(() => {
-    fetch('/api/v1/office/agent-config')
+    apiFetch('/api/v1/office/agent-config')
       .then((res) => res.json())
       .then((envelope) => {
         const configs = envelope?.data?.configs || {};
@@ -142,7 +143,7 @@ export const AgentStatusBar: React.FC = () => {
   }, []);
 
   const syncTokensFromAPI = useCallback(() => {
-    fetch('/api/v1/office/costs/by-agent')
+    apiFetch('/api/v1/office/costs/by-agent')
       .then((res) => res.json())
       .then((envelope) => {
         const items = envelope?.data?.items || [];

@@ -1,3 +1,4 @@
+import { apiFetch } from '../shared/api';
 import React, { useEffect, useState } from 'react';
 import { EventBus } from '../shared/events/EventBus';
 import { invalidateAgentCache, loadAgentRegistry } from '../shared/agentRegistry';
@@ -33,7 +34,7 @@ function toSlug(name: string): string {
   return name
     .trim()
     .toLowerCase()
-    .replace(/[\s\-]+/g, '_')
+    .replace(/[\s-]+/g, '_')
     .replace(/[^a-z0-9_\u4e00-\u9fff]/g, '')
     // 如果全是中文，用拼音首字母的简单 fallback
     .replace(/[\u4e00-\u9fff]+/g, '')
@@ -55,7 +56,7 @@ export const AgentCreateDialog: React.FC<Props> = ({ onClose, onCreated }) => {
 
   // 加载预设模板
   useEffect(() => {
-    fetch('/api/v1/office/agent-templates')
+    apiFetch('/api/v1/office/agent-templates')
       .then((r) => r.json())
       .then((envelope) => {
         const items: Template[] = (envelope?.data?.templates || [])
@@ -92,7 +93,7 @@ export const AgentCreateDialog: React.FC<Props> = ({ onClose, onCreated }) => {
     setError('');
 
     try {
-      const res = await fetch(`/api/v1/office/agent-config/${trimmedSlug}`, {
+      const res = await apiFetch(`/api/v1/office/agent-config/${trimmedSlug}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -380,7 +380,7 @@ export class OfficeScene extends Phaser.Scene {
   // 房间名称标签
   // ============================================================
   private createRoomLabels() {
-    for (const [_key, room] of Object.entries(ROOMS)) {
+    for (const room of Object.values(ROOMS)) {
       const label = this.add.text(room.labelPos.x, room.labelPos.y, room.label, {
         fontFamily: 'monospace',
         fontSize: '14px',
@@ -768,7 +768,7 @@ export class OfficeScene extends Phaser.Scene {
     EventBus.off('agent:despawned', this.onAgentDespawned, this);
   }
 
-  update(_time: number, _delta: number) {
+  update() {
     // WebSocket 事件驱动（未来）
   }
 }

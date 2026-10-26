@@ -1,3 +1,4 @@
+import { apiFetch } from '../shared/api';
 import React, { useEffect, useState } from 'react';
 import { EventBus } from '../shared/events/EventBus';
 import { invalidateAgentCache, loadAgentRegistry } from '../shared/agentRegistry';
@@ -22,6 +23,7 @@ interface AgentConfig {
   max_tokens: number;
   api_base: string;
   api_key: string;
+  api_key_configured: boolean;
   // 身份定义
   display_name: string;
   role: string;
@@ -57,6 +59,7 @@ export const AgentConfigPanel: React.FC<Props> = ({ agentSlug, agentName, agentC
     max_tokens: 2048,
     api_base: '',
     api_key: '',
+    api_key_configured: false,
     display_name: agentName,
     role: '',
     system_prompt: '',
@@ -79,7 +82,7 @@ export const AgentConfigPanel: React.FC<Props> = ({ agentSlug, agentName, agentC
 
   // 加载预设模板
   useEffect(() => {
-    fetch('/api/v1/office/agent-templates')
+    apiFetch('/api/v1/office/agent-templates')
       .then((r) => r.json())
       .then((envelope) => {
         setTemplates(envelope?.data?.templates || []);
@@ -89,12 +92,12 @@ export const AgentConfigPanel: React.FC<Props> = ({ agentSlug, agentName, agentC
 
   // 加载可用技能包列表 + 当前 Agent 的技能包
   useEffect(() => {
-    fetch('/api/v1/office/skill-packs')
+    apiFetch('/api/v1/office/skill-packs')
       .then((r) => r.json())
       .then((envelope) => setSkillPacks(envelope?.data?.skill_packs || []))
       .catch(() => {});
     // 从 agent-config 中读取 skill_packs（兼容方式）
-    fetch(`/api/v1/office/agent-config`)
+    apiFetch(`/api/v1/office/agent-config`)
       .then((r) => r.json())
       .then((envelope) => {
         const configs = envelope?.data?.configs || {};
@@ -111,7 +114,7 @@ export const AgentConfigPanel: React.FC<Props> = ({ agentSlug, agentName, agentC
 
   // 加载可用模型列表
   useEffect(() => {
-    fetch('/api/v1/office/models')
+    apiFetch('/api/v1/office/models')
       .then((r) => r.json())
       .then((envelope) => {
         const items: ModelOption[] = envelope?.data?.models || [];
@@ -123,7 +126,7 @@ export const AgentConfigPanel: React.FC<Props> = ({ agentSlug, agentName, agentC
 
   // 加载当前 Agent 配置
   useEffect(() => {
-    fetch('/api/v1/office/agent-config')
+    apiFetch('/api/v1/office/agent-config')
       .then((r) => r.json())
       .then((envelope) => {
         const configs = envelope?.data?.configs || {};
@@ -135,7 +138,8 @@ export const AgentConfigPanel: React.FC<Props> = ({ agentSlug, agentName, agentC
             temperature: agentCfg.temperature ?? 0.7,
             max_tokens: agentCfg.max_tokens ?? 2048,
             api_base: agentCfg.api_base || '',
-            api_key: agentCfg.api_key || '',
+            api_key: '',
+            api_key_configured: agentCfg.api_key_configured ?? false,
             display_name: agentCfg.display_name || agentName,
             role: agentCfg.role || '',
             system_prompt: agentCfg.system_prompt || '',
@@ -151,14 +155,19 @@ export const AgentConfigPanel: React.FC<Props> = ({ agentSlug, agentName, agentC
     setSaving(true);
     setMessage('');
     try {
-      const res = await fetch(`/api/v1/office/agent-config/${agentSlug}`, {
+      const res = await apiFetch(`/api/v1/office/agent-config/${agentSlug}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config),
       });
       if (res.ok) {
+        setConfig((current) => ({
+          ...current,
+          api_key: '',
+          api_key_configured: current.api_key ? true : current.api_key_configured,
+        }));
         setMessage('已保存');
-        EventBus.emit('agent:config-updated', { agentSlug, config });
+        EventBus.emit('agent:config-updated', { agentSlug, config: { ...config, api_key: '' } });
         setTimeout(() => setMessage(''), 2000);
       } else {
         setMessage('保存失败');
@@ -180,7 +189,7 @@ export const AgentConfigPanel: React.FC<Props> = ({ agentSlug, agentName, agentC
     setRefining(true);
     setRefineMsg('');
     try {
-      const res = await fetch(`/api/v1/office/agent-config/${agentSlug}/refine-prompt`, {
+      const res = await apiFetch(`/api/v1/office/agent-config/${agentSlug}/refine-prompt`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -214,7 +223,7 @@ export const AgentConfigPanel: React.FC<Props> = ({ agentSlug, agentName, agentC
     setDeleting(true);
     setDeleteError('');
     try {
-      const res = await fetch(`/api/v1/office/agent-config/${agentSlug}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/v1/office/agent-config/${agentSlug}`, { method: 'DELETE' });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
         setDeleteError(body?.detail || '删除失败');
@@ -595,19 +604,19 @@ export const AgentConfigPanel: React.FC<Props> = ({ agentSlug, agentName, agentC
                 <label style={{ ...styles.label, fontSize: '12px' }}>API Key (代理密钥)</label>
                 <input
                   type="password"
-                  placeholder="sk-..."
+                  placeholder={config.api_key_configured ? '已保存；留空则保持不变' : '输入代理 API Key'}
                   value={config.api_key}
                   onChange={(e) => setConfig((c) => ({ ...c, api_key: e.target.value }))}
                   style={styles.input}
                 />
               </div>
-              {(config.api_base || config.api_key) && (
+              {(config.api_base || config.api_key || config.api_key_configured) && (
                 <div style={{
                   marginTop: 8, padding: '6px 10px', borderRadius: 4,
                   background: 'rgba(255, 170, 50, 0.1)', border: '1px solid rgba(255, 170, 50, 0.3)',
                   fontSize: '11px', color: '#ccaa66', lineHeight: 1.5,
                 }}>
-                  注意：使用第三方代理服务时，请确保该服务可信。API Key 将以加密方式存储，但仍建议使用专用子密钥。
+                  注意：使用第三方代理服务时，请确保该服务可信。密钥仅在保存时发送到后端，不会从读取接口返回；请使用专用子密钥并保护服务器数据库。
                   部分代理服务可能不支持所有模型功能（如 Function Calling）。
                 </div>
               )}
@@ -670,13 +679,13 @@ export const AgentConfigPanel: React.FC<Props> = ({ agentSlug, agentName, agentC
                 setSavingSkills(true);
                 try {
                   // 找到 agent_id
-                  const listRes = await fetch('/api/v1/office/agents');
+                  const listRes = await apiFetch('/api/v1/office/agents');
                   const listJson = await listRes.json();
                   const agents = listJson?.data?.agents || [];
                   const agent = agents.find((a: { slug: string }) => a.slug === agentSlug);
                   if (!agent) { setMessage('找不到 Agent'); return; }
 
-                  await fetch(`/api/v1/office/agents/${agent.agent_id}/skill-packs`, {
+                  await apiFetch(`/api/v1/office/agents/${agent.agent_id}/skill-packs`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ skill_packs: agentSkillPacks }),

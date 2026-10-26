@@ -17,11 +17,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/DBell-workshop/AgentFleet/stargazers"><img src="https://img.shields.io/github/stars/DBell-workshop/AgentFleet?style=social" alt="Stars" /></a>
-  <a href="https://github.com/DBell-workshop/AgentFleet/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-BSL_1.1-blue" alt="License" /></a>
-  <a href="#"><img src="https://img.shields.io/badge/python-3.9+-green" alt="Python" /></a>
+  <a href="https://github.com/drrahyar1997-lab/AgentFleet/stargazers"><img src="https://img.shields.io/github/stars/drrahyar1997-lab/AgentFleet?style=social" alt="Stars" /></a>
+  <a href="https://github.com/drrahyar1997-lab/AgentFleet/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-BSL_1.1-blue" alt="License" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/python-3.11+-green" alt="Python" /></a>
   <a href="#"><img src="https://img.shields.io/badge/frontend-React%20%2B%20Phaser3-purple" alt="Frontend" /></a>
-  <a href="https://github.com/DBell-workshop/AgentFleet/releases/latest"><img src="https://img.shields.io/badge/download-macOS%20DMG-blue" alt="Download" /></a>
+  <a href="https://github.com/drrahyar1997-lab/AgentFleet/releases/latest"><img src="https://img.shields.io/badge/download-macOS%20DMG-blue" alt="Download" /></a>
 </p>
 
 <p align="center">
@@ -54,7 +54,7 @@ AgentFleet は**マルチ Agent 協調ワークベンチ**です。ドット絵�
 <a id="screenshots"></a>
 ## スクリーンショット
 
-> スクリーンショットは **AgentFleet Pro** のものです。Lite（オープンソース版）にはコアのドット絵オフィス、Agent チャット、シーンシステムが含まれます。
+> スクリーンショットは **AgentFleet Pro** のものです。Lite（BSL 1.1）にはコアのドット絵オフィス、Agent チャット、シーンシステムが含まれます。
 
 <table>
 <tr>
@@ -111,45 +111,42 @@ Phaser 3 ゲームエンジン上に構築 —— 2D ドット絵オフィスで
 
 ### デスクトップアプリ（推奨）
 
-[Releases](https://github.com/DBell-workshop/AgentFleet/releases/latest) から最新の DMG をダウンロード：
-
-1. `AgentFleet_x.x.x_aarch64.dmg` をダウンロード（macOS Apple Silicon）
-2. Applications にドラッグ
-3. 起動 —— バックエンド起動中はドット絵のローディング画面が表示されます
-4. 設定で API Key を入力してチャット開始
-
-> DMG は Apple の署名・公証済み —— セキュリティ警告なしでインストールできます。
+現在 GitHub Releases に公開済みのデスクトップ版はありません。公開リポジトリには Lite のソースコードが含まれます。以下の開発モードまたは Docker を利用してください。
 
 ### 開発モード
 
 ```bash
-git clone https://github.com/DBell-workshop/AgentFleet.git
+git clone https://github.com/drrahyar1997-lab/AgentFleet.git
 cd AgentFleet
 
 # バックエンド
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-python run_server.py
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 
 # フロントエンド（別ターミナル）
 cd frontend && npm install && npm run dev
 ```
 
-**http://localhost:8000/static/office/** にアクセス
+**http://localhost:8001/static/office/** にアクセス
 
 ### Docker
 
 ```bash
-cp .env.example .env   # LLM API Key を最低1つ追加
-docker compose up -d
+cp .env.example .env
+# .env に API_ACCESS_TOKEN と POSTGRES_PASSWORD の強力な値を設定
+# 例: openssl rand -hex 32
+docker compose up --build -d
 ```
+
+コンテナは `127.0.0.1:8001` のみにバインドし、PostgreSQL のポートはホストに公開しません。API トークンを設定し、信頼できないネットワークには直接公開しないでください。
 
 ---
 
 <a id="pro-vs-lite"></a>
 ## Pro vs Lite
 
-| 機能 | Lite（オープンソース） | Pro |
+| 機能 | Lite（BSL 1.1） | Pro |
 |------|:------------------:|:---:|
 | ドット絵 RPG オフィス | ✅ | ✅ |
 | Agent チャット（グループ + DM） | ✅ | ✅ |
@@ -188,7 +185,7 @@ docker compose up -d
 <a id="support"></a>
 ## このプロジェクトを応援する
 
-**⭐ [Star をつける](https://github.com/DBell-workshop/AgentFleet)** —— 最もシンプルな応援方法
+**⭐ [Star をつける](https://github.com/drrahyar1997-lab/AgentFleet)** —— 最もシンプルな応援方法
 
 ---
 
@@ -202,9 +199,7 @@ docker compose up -d
 
 ## コントリビューション
 
-- [Issue](https://github.com/DBell-workshop/AgentFleet/issues) でバグ報告や機能提案
-- PR でコード貢献
-- [Discussions](https://github.com/DBell-workshop/AgentFleet/discussions) でアイデア交換
+- バグ報告やコードの貢献は PR を送ってください。現在、このリポジトリでは Issues と Discussions が無効です。
 
 ---
 

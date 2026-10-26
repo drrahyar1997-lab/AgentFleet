@@ -1,3 +1,4 @@
+import { apiFetch } from '../shared/api';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { EventBus } from '../shared/events/EventBus';
 import { loadAgentRegistry, getAgentsCached, type AgentRegistryEntry } from '../shared/agentRegistry';
@@ -12,6 +13,34 @@ function getAgents() { return getAgentsCached().map(toAgentDef); }
 // 群聊是一个虚拟联系人
 const GROUP_CONTACT_SLUG = 'group';
 
+interface SkillProduct {
+  product_id: string;
+  name: string;
+  price: number;
+  original_price?: number;
+  rating?: number;
+  review_count?: number;
+  promotions?: string[];
+}
+
+interface SkillPayload {
+  results?: Record<string, SkillProduct[]>;
+  type_label?: string;
+  recommendation?: string;
+  price_range?: { min: number; max: number; savings: number };
+  promotions_summary?: Record<string, string[]>;
+}
+
+interface ConversationMessage {
+  message_id: string;
+  role: ChatMessage['role'];
+  message_type?: string;
+  agent_slug?: string;
+  agent_name?: string;
+  content: string;
+  created_at: string;
+}
+
 interface ChatMessage {
   id: string;
   role: 'user' | 'agent' | 'system' | 'dispatcher' | 'process' | 'skill';
@@ -23,8 +52,8 @@ interface ChatMessage {
   skillData?: {
     sessionId?: string;
     interactionType?: string;
-    payload?: any;
-    prompt?: any;
+    payload?: SkillPayload;
+    prompt?: { message?: string };
   };
 }
 
@@ -200,15 +229,29 @@ const tableStyles: Record<string, React.CSSProperties> = {
 // ============================================================
 interface SSEEvent {
   type: string;
-  data: any;
+  data: {
+    conversation_id?: string;
+    agent_slug?: string;
+    agent_name?: string;
+    display_name?: string;
+    content?: string;
+    message_type?: string;
+    movement?: { agent_id?: string; room_id?: string };
+    usage?: { total_tokens?: number };
+    session_id?: string;
+    interaction_type?: string;
+    payload?: SkillPayload;
+    prompt?: { message?: string };
+    error?: string;
+  };
 }
 
 async function streamChat(
   url: string,
-  body: Record<string, any>,
+  body: Record<string, unknown>,
   onEvent: (event: SSEEvent) => void,
 ): Promise<void> {
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -325,7 +368,7 @@ export const ChatBox: React.FC = () => {
 
   // 加载会话列表
   const loadConversations = useCallback(() => {
-    fetch('/api/v1/office/conversations?limit=30')
+    apiFetch('/api/v1/office/conversations?limit=30')
       .then((r) => r.json())
       .then((envelope) => {
         setConversations(envelope?.data?.conversations || []);
@@ -408,9 +451,9 @@ export const ChatBox: React.FC = () => {
     setLoadingHistory(true);
     setShowHistory(false);
     try {
-      const res = await fetch(`/api/v1/office/conversations/${convId}`);
-      const envelope = await res.json();
-      const data = envelope?.data;
+      const res = await apiFetch(`/api/v1/office/conversations/${convId}`);
+      const envelope = await res.json() as { data?: { messages?: ConversationMessage[] }; error?: unknown };
+      const data = envelope.data;
       if (!data || envelope.error) {
         setLoadingHistory(false);
         return;
@@ -419,7 +462,7 @@ export const ChatBox: React.FC = () => {
       setConversationId(convId);
       historyRef.current = [];
 
-      const loaded: ChatMessage[] = (data.messages || []).map((m: any) => {
+      const loaded: ChatMessage[] = (data.messages || []).map((m) => {
         if (m.role === 'user') {
           historyRef.current.push({ role: 'user', content: m.content });
         } else if (m.role === 'agent' && m.message_type !== 'process') {
@@ -449,7 +492,7 @@ export const ChatBox: React.FC = () => {
   const deleteConversation = useCallback(async (convId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await fetch(`/api/v1/office/conversations/${convId}`, { method: 'DELETE' });
+      await apiFetch(`/api/v1/office/conversations/${convId}`, { method: 'DELETE' });
       setConversations((prev) => prev.filter((c) => c.conversation_id !== convId));
       if (convId === conversationId) {
         startNewConversation();
@@ -485,7 +528,7 @@ export const ChatBox: React.FC = () => {
       ? '/api/v1/office/chat/direct/stream'
       : '/api/v1/office/chat/stream';
 
-    const body: Record<string, any> = {
+    const body: Record<string, unknown> = {
       message: trimmed,
       history: historyRef.current.slice(-10),
       conversation_id: conversationId || undefined,
@@ -520,13 +563,13 @@ export const ChatBox: React.FC = () => {
               role: event.type === 'routing' ? 'agent' : 'process',
               agentSlug: d.agent_slug,
               agentName: d.agent_name,
-              content: d.content,
+              content: d.content || '',
               messageType: d.message_type,
             });
             if (d.agent_slug) {
               EventBus.emit('chat:agent-bubble', {
                 agentSlug: d.agent_slug,
-                text: d.content,
+                text: d.content || '',
                 duration: 10000,
               });
             }
@@ -549,13 +592,13 @@ export const ChatBox: React.FC = () => {
               role: 'agent',
               agentSlug: d.agent_slug,
               agentName: d.agent_name,
-              content: d.content,
+              content: d.content || '',
               messageType: d.message_type,
             });
             if (d.agent_slug) {
               EventBus.emit('chat:agent-bubble', {
                 agentSlug: d.agent_slug,
-                text: d.content,
+                text: d.content || '',
                 duration: 10000,
               });
             }
@@ -566,8 +609,8 @@ export const ChatBox: React.FC = () => {
               });
             }
             // 更新最后消息预览
-            updateLastMessage(activeContact, d.content);
-            historyRef.current.push({ role: 'assistant', content: d.content });
+            updateLastMessage(activeContact, d.content || '');
+            historyRef.current.push({ role: 'assistant', content: d.content || '' });
             break;
           }
 
@@ -589,11 +632,11 @@ export const ChatBox: React.FC = () => {
           // Skill 事件处理
           case 'skill_start': {
             const d = event.data;
-            setActiveSkillSession(d.session_id);
+            setActiveSkillSession(d.session_id || null);
             addMessage({
               role: 'skill',
               agentSlug: d.agent_slug,
-              content: `🔍 ${d.display_name} 技能启动中...`,
+              content: `🔍 ${d.display_name || d.agent_name || 'Agent'} 技能启动中...`,
               messageType: 'skill_start',
               skillData: { sessionId: d.session_id },
             });
@@ -608,7 +651,7 @@ export const ChatBox: React.FC = () => {
                 content: d.content || '搜索完成',
                 messageType: 'skill_search_results',
                 skillData: {
-                  sessionId: d.session_id || activeSkillSessionRef.current,
+                  sessionId: d.session_id || activeSkillSessionRef.current || undefined,
                   interactionType: 'search_results',
                   payload: d.payload,
                 },
@@ -619,7 +662,7 @@ export const ChatBox: React.FC = () => {
                 content: d.prompt?.message || '请选择要对比的商品',
                 messageType: 'skill_awaiting_user',
                 skillData: {
-                  sessionId: d.session_id || activeSkillSessionRef.current,
+                  sessionId: d.session_id || activeSkillSessionRef.current || undefined,
                   interactionType: 'awaiting_user',
                   prompt: d.prompt,
                 },
@@ -630,7 +673,7 @@ export const ChatBox: React.FC = () => {
                 content: d.content || '比价分析完成',
                 messageType: 'skill_comparison_result',
                 skillData: {
-                  sessionId: d.session_id,
+                  sessionId: d.session_id || undefined,
                   interactionType: 'comparison_result',
                   payload: d.payload,
                 },
@@ -666,7 +709,7 @@ export const ChatBox: React.FC = () => {
       }
       setSending(false);
     }
-  }, [input, sending, addMessage, conversationId, activeContact, agents, loadConversations, updateLastMessage]);
+  }, [input, sending, addMessage, conversationId, activeContact, loadConversations, updateLastMessage]);
 
   // Skill 商品选择切换
   const toggleProductSelection = useCallback((productId: string) => {
@@ -747,7 +790,7 @@ export const ChatBox: React.FC = () => {
     formData.append('file', file);
 
     try {
-      const res = await fetch('/api/v1/office/upload', {
+      const res = await apiFetch('/api/v1/office/upload', {
         method: 'POST',
         body: formData,
       });
@@ -1071,11 +1114,11 @@ export const ChatBox: React.FC = () => {
                         <div style={skillStyles.resultsHeader}>
                           {msg.content}
                         </div>
-                        {Object.entries(msg.skillData.payload.results as Record<string, any[]>).map(
+                        {Object.entries(msg.skillData.payload.results || {}).map(
                           ([platform, products]) => (
                             <div key={platform} style={skillStyles.platformGroup}>
                               <div style={skillStyles.platformLabel}>{platform}</div>
-                              {products.map((p: any) => {
+                              {products.map((p) => {
                                 const isSelected = selectedProducts.includes(p.product_id);
                                 return (
                                   <div
@@ -1100,18 +1143,18 @@ export const ChatBox: React.FC = () => {
                                       <span style={skillStyles.productPrice}>
                                         ¥{p.price}
                                       </span>
-                                      {p.original_price > p.price && (
+                                      {p.original_price !== undefined && p.original_price > p.price && (
                                         <span style={skillStyles.originalPrice}>
                                           ¥{p.original_price}
                                         </span>
                                       )}
                                       <span style={skillStyles.productRating}>
-                                        {p.rating} ({(p.review_count / 1000).toFixed(1)}k评)
+                                        {p.rating} ({((p.review_count || 0) / 1000).toFixed(1)}k评)
                                       </span>
                                     </div>
-                                    {p.promotions?.length > 0 && (
+                                    {Boolean(p.promotions?.length) && (
                                       <div style={skillStyles.promotions}>
-                                        {p.promotions.map((promo: string, i: number) => (
+                                        {p.promotions?.map((promo, i) => (
                                           <span key={i} style={skillStyles.promoTag}>{promo}</span>
                                         ))}
                                       </div>
@@ -1153,27 +1196,27 @@ export const ChatBox: React.FC = () => {
                           <div style={skillStyles.priceItem}>
                             <span style={{ color: '#888' }}>最低价</span>
                             <span style={skillStyles.lowPrice}>
-                              ¥{msg.skillData.payload.price_range.min}
+                              ¥{msg.skillData.payload.price_range?.min}
                             </span>
                           </div>
                           <div style={skillStyles.priceItem}>
                             <span style={{ color: '#888' }}>最高价</span>
                             <span style={{ color: '#ff6b6b', fontSize: 18 }}>
-                              ¥{msg.skillData.payload.price_range.max}
+                              ¥{msg.skillData.payload.price_range?.max}
                             </span>
                           </div>
-                          {msg.skillData.payload.price_range.savings > 0 && (
+                          {(msg.skillData.payload.price_range?.savings ?? 0) > 0 && (
                             <div style={skillStyles.priceItem}>
                               <span style={{ color: '#888' }}>可省</span>
                               <span style={{ color: '#ffd700', fontSize: 18, fontWeight: 'bold' }}>
-                                ¥{msg.skillData.payload.price_range.savings}
+                                ¥{msg.skillData.payload.price_range?.savings}
                               </span>
                             </div>
                           )}
                         </div>
                         {msg.skillData.payload.promotions_summary && (
                           <div style={skillStyles.promoSummary}>
-                            {Object.entries(msg.skillData.payload.promotions_summary).map(
+                            {Object.entries(msg.skillData.payload.promotions_summary || {}).map(
                               ([platform, promos]) => (
                                 <div key={platform} style={{ marginBottom: 4 }}>
                                   <span style={{ color: '#ffd700', fontSize: 11 }}>{platform}: </span>
